@@ -4,9 +4,6 @@ const { map, mergeAll, mergeMap, debounceTime, filter, tap, distinctUntilChanged
 const { ajax } = rxjs.ajax;
 const $layer = document.getElementById('suggestLayer');
 const $loading = document.getElementById('loading');
-
-
-
 const islength = query => query.trim().length > 1;
 const keyup$ = fromEvent(document.getElementById('search'), "keyup")
     .pipe(
@@ -16,7 +13,6 @@ const keyup$ = fromEvent(document.getElementById('search'), "keyup")
         tap(v => console.log("from keyup$", v)),
         share()
     );
-
 const user$ = keyup$
     .pipe(
         filter(islength),
@@ -31,23 +27,6 @@ const reset$ = keyup$
         filter(query => query.trim().length === 0),
         tap(v => $layer.innerHTML = "")
     );
-
-user$.subscribe(drawLayer, e => {
-    console.error(e);
-    alert(e.message);
-});
-reset$.subscribe();
-//keyup$.connect();
-
-
-
-
-
-
-
-
-
-
 function drawLayer(obj) {
     $layer.innerHTML = obj.items.map(user => {
         return `<li class="user">
@@ -62,5 +41,19 @@ function showLoading() {
 function hideLoading() {
     $loading.style.display = "none";
 }
+
+
+
+
+
+
+
+user$.subscribe(drawLayer, e => {
+    console.error(e);
+    alert(e.message);
+});
+reset$.subscribe();
+//keyup$.connect();
+
 
 
