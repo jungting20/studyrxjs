@@ -1,5 +1,5 @@
-const { fromEvent,merge,concat } = rxjs;
-const { map, takeUntil, mergeAll, mergeMap, switchMap, take, startWith, tap, first, withLatestFrom,share,scan } = rxjs.operators;
+const { fromEvent,merge,concat,defer,of,animationFrameScheduler,asyncScheduler,interval } = rxjs;
+const { map, takeUntil, mergeAll, mergeMap, switchMap, take, startWith, tap, first, withLatestFrom,share,scan,takeWhile } = rxjs.operators;
 const THRESHOLD = 30;
 
 const $view = document.getElementById('carousel');
@@ -15,6 +15,7 @@ const EVENTS = {
     move: SUPPORT_TOUCH ? "touchmove" : "mousemove",
     end: SUPPORT_TOUCH ? "touchend" : "mouseup"
 }
+const DEFAULT_DURATION = 300;
 
 function toPos($obj) {
     return $obj
@@ -26,6 +27,8 @@ function toPos($obj) {
 function translateX(posX){
     $container.style.transform = `translate3d(${posX}px,0,0)`;
 }
+
+
 
 
 const size$ = fromEvent(window, "resize")
@@ -80,12 +83,29 @@ const carousel$ = merge(drag$,drop$).pipe(
         to:0,
         index:0,
         size:0
-    })
+    }),
+    switchMap(({from,to}) => from === to ? of(to) : animation(from,to,DEFAULT_DURATION)),
 ); 
-carousel$.subscribe(store => {
-    console.log("캐러셀 데이터",store);
-    translateX(store.to);
+carousel$.subscribe(pos => {
+    console.log("캐러셀 데이터",pos);
+    translateX(pos);
 });
-//drag$.subscribe(distance => console.log("start$와 movd$의 차이 값", distance));
-//size$.subscribe(width => console.log('넓이', width));
-//drop$.subscribe(a => console.log(a));
+
+
+function animation(from, to, duration) {
+    return defer(() => {
+    const scheduler = animationFrameScheduler;
+    const start = scheduler.now();
+    //함수를 만든 시점에 이미 값이 결정 구독시점까지 미뤄야하는게 포인트!
+    //함수로 리턴하여 실행하면서 하는 방법이있고 defer함수를 사용하는 방법이 있다
+    const interval$ = interval(0, scheduler)
+        .pipe(
+            map(() => (scheduler.now() - start) / duration),
+            takeWhile(x => x <= 1)//사실상 이부분이 시간을 결정해줌 저건 비율이니까
+        )
+    return concat(interval$, of(1))
+        .pipe(
+            map(rate => from + (to - from) * rate)
+        )
+    })
+}
